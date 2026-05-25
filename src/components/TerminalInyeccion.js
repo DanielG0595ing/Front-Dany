@@ -1,0 +1,113 @@
+"use client";
+import { useState, useRef } from 'react';
+
+export default function TerminalInyeccion({ onMisionInyectada }) {
+  const [estadoRadar, setEstadoRadar] = useState('STANDBY');
+  const formRef = useRef(null);
+
+  const ejecutarInyeccion = async (e) => {
+    e.preventDefault();
+    setEstadoRadar('TRANSMITIENDO');
+
+    const formData = new FormData(formRef.current);
+
+    try {
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/misiones`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!respuesta.ok) throw new Error('Escudos rechazaron el paquete');
+
+      setEstadoRadar('EXITO');
+      formRef.current.reset();
+      if (onMisionInyectada) onMisionInyectada();
+      setTimeout(() => setEstadoRadar('STANDBY'), 3000);
+    } catch (error) {
+      console.error(">_ Fallo en transmisión:", error);
+      setEstadoRadar('ERROR');
+      setTimeout(() => setEstadoRadar('STANDBY'), 4000);
+    }
+  };
+
+  return (
+    <div className="border border-[#00FF00] bg-[#000800] p-6 shadow-[inset_0_0_15px_rgba(0,255,0,0.1)] relative text-sm">
+      <h2 className="text-xl font-bold mb-6 border-b border-[#004400] pb-2 uppercase tracking-widest flex justify-between">
+        <span>&gt;_ Registro de Datos (Mod. Excel)</span>
+        <span className="text-xs text-[#00AA00] animate-pulse">[{estadoRadar}]</span>
+      </h2>
+
+      <form ref={formRef} onSubmit={ejecutarInyeccion} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* OBRA */}
+          <div className="flex flex-col">
+            <label className="text-[10px] opacity-70 mb-1">OBRA *</label>
+            <input required type="text" name="codigo_obra" placeholder="Ej: Nave LAG II" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none placeholder-[#002200]" />
+          </div>
+          {/* PROYECTO */}
+          <div className="flex flex-col">
+            <label className="text-[10px] opacity-70 mb-1">PROYECTO</label>
+            <input type="text" name="nombre_proyecto" placeholder="Ej: MBS" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none placeholder-[#002200]" />
+          </div>
+          {/* ASIGNADO */}
+          <div className="flex flex-col">
+            <label className="text-[10px] opacity-70 mb-1">ASIGNADO</label>
+            <input type="text" name="operador_asignado" defaultValue="DG" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none" />
+          </div>
+        </div>
+
+        {/* PENDIENTE */}
+        <div className="flex flex-col">
+          <label className="text-[10px] opacity-70 mb-1">PENDIENTE (DIRECTIVA PRINCIPAL) *</label>
+          <input required type="text" name="titulo_mision" placeholder="Ej: Ingenieria de detalle" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none placeholder-[#002200]" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* FC */}
+          <div className="flex flex-col">
+            <label className="text-[10px] opacity-70 mb-1">FC (FECHA COMPROMISO)</label>
+            <input type="text" name="fecha_compromiso" placeholder="Ej: 04/05" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none placeholder-[#002200]" />
+          </div>
+          {/* FECHA NUEVA */}
+          <div className="flex flex-col">
+            <label className="text-[10px] opacity-70 mb-1">FECHA NUEVA</label>
+            <input type="text" name="fecha_nueva" placeholder="Ej: 4-may" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none placeholder-[#002200]" />
+          </div>
+          {/* ESTADO */}
+          <div className="flex flex-col">
+            <label className="text-[10px] opacity-70 mb-1">ESTADO</label>
+            <select name="estado_operativo" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none">
+              <option value="SIN ACCION">SIN ACCION</option>
+              <option value="EN PROCESO">EN PROCESO</option>
+              <option value="FINALIZADO">FINALIZADO</option>
+            </select>
+          </div>
+          {/* OCULTAR2 */}
+          <div className="flex flex-col">
+            <label className="text-[10px] opacity-70 mb-1">OCULTAR2</label>
+            <select name="ocultar" className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none">
+              <option value="NO">NO</option>
+              <option value="SI">SI</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ENLACE OPTICO (FOTO) */}
+        <div className="flex flex-col border border-dashed border-[#004400] p-3 bg-[#000500]">
+          <label className="text-[10px] opacity-70 mb-1 font-bold">CAPTURA DE TERRENO (UPLINK SATELITAL)</label>
+          <input type="file" name="imagen" accept="image/*" className="text-xs text-[#00AA00]" />
+        </div>
+
+        {/* COMENTARIOS */}
+        <div className="flex flex-col">
+          <label className="text-[10px] opacity-70 mb-1">COMENTARIOS (SOPORTA MULTILÍNEA)</label>
+          <textarea name="notas_telemetria" rows="2" placeholder="Línea 1&#10;Línea 2..." className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none placeholder-[#002200] resize-none"></textarea>
+        </div>
+
+        <button type="submit" disabled={estadoRadar === 'TRANSMITIENDO'} className="w-full p-3 font-bold uppercase tracking-widest bg-[#00FF00] text-black hover:bg-white transition-all disabled:bg-[#003300]">
+          {estadoRadar === 'TRANSMITIENDO' ? 'ENVIANDO DATOS A MATRIZ...' : 'Inyectar Registro'}
+        </button>
+      </form>
+    </div>
+  );
+}
