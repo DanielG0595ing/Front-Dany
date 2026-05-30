@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import TerminalInyeccion from '../components/TerminalInyeccion';
 import AccesoRestringido from '../components/AccesoRestringido';
 import Link from 'next/link';
-
+import VisorCRT from '../components/VisorCRT'; // ➔ INYECTE ESTA LÍNEA AQUÍ
 
 export default function CentroDeComando() {
   const [misiones, setMisiones] = useState([]);
@@ -97,7 +97,7 @@ export default function CentroDeComando() {
                   href="/visor" 
                   className="bg-[#001100] border border-[#00FF00] text-[#00FF00] p-2 hover:bg-[#00FF00] hover:text-black font-black text-xs uppercase text-center transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_15px_rgba(0,255,0,0.4)] tracking-wider"
                 >
-                  [ 🗺️ RADAR  (VISOR) ]
+                  [ 🗺️ RADAR (VISOR) ]
                 </Link>
                 
                 <Link 
@@ -107,6 +107,14 @@ export default function CentroDeComando() {
                   [ 📊 BÓVEDA (GESTIÓN) ]
                 </Link>
               </nav>
+
+              {/* ========================================== */}
+              {/* 📺 MÓDULO CRT: VISOR DE TELEMETRÍA (FRENTE VISUAL) */}
+              {/* ========================================== */}
+              {/* hidden md:block asegura que el televisor no estorbe en los celulares del terreno,solo se encenderá en los monitores anchos de la Base Operativa */}
+              <div className="mt-10 relative z-[450]">
+                <VisorCRT />
+              </div>
           </aside>
 
           {/* COLUMNA CENTRAL/DERECHA: GRILLA Y TERMINAL */}
