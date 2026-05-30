@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import TerminalInyeccion from '../components/TerminalInyeccion';
 import AccesoRestringido from '../components/AccesoRestringido';
+import Link from 'next/link';
+
 
 export default function CentroDeComando() {
   const [misiones, setMisiones] = useState([]);
@@ -83,6 +85,28 @@ export default function CentroDeComando() {
               <p>&gt; IP_ORIGEN: {ipOrigen}</p>
               <p>&gt; ENCRYPT: AES-256-GCM</p>
             </div>
+              {/* ========================================== */}
+              {/* 🔗 PUENTES DE NAVEGACIÓN TÁCTICA */}
+              {/* ========================================== */}
+              <nav className="mt-8 flex flex-col gap-3 z-[450]">
+                <p className="text-[10px] text-[#008800] tracking-widest uppercase border-b border-[#004400] pb-1 mb-2 font-bold">
+                  &gt; RUTAS DE ACCESO RESTRINGIDO
+                </p>
+                
+                <Link 
+                  href="/visor" 
+                  className="bg-[#001100] border border-[#00FF00] text-[#00FF00] p-2 hover:bg-[#00FF00] hover:text-black font-black text-xs uppercase text-center transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_15px_rgba(0,255,0,0.4)] tracking-wider"
+                >
+                  [ 🗺️ RADAR  (VISOR) ]
+                </Link>
+                
+                <Link 
+                  href="/gestion" 
+                  className="bg-[#001100] border border-[#00FF00] text-[#00FF00] p-2 hover:bg-[#00FF00] hover:text-black font-black text-xs uppercase text-center transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_15px_rgba(0,255,0,0.4)] tracking-wider"
+                >
+                  [ 📊 BÓVEDA (GESTIÓN) ]
+                </Link>
+              </nav>
           </aside>
 
           {/* COLUMNA CENTRAL/DERECHA: GRILLA Y TERMINAL */}
