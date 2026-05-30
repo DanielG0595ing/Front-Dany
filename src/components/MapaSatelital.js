@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Polygon } from 'react-leaflet';
+import { useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -41,6 +43,9 @@ export default function MapaSatelital() {
   const baseLat = -34.6037;
   const baseLng = -58.3816;
 
+  // REFERENCIA PARA EL INFORME PDF
+  const componentePDF = useRef(null); // <- Asegúrese de poner el 'null' aquí
+
   // 🛰️ EXTRAER COORDENADAS DE LA NUBE
   const cargarRadarCloud = useCallback(async () => {
     try {
@@ -51,6 +56,12 @@ export default function MapaSatelital() {
       console.error(">_ ERROR DE LECTURA CARTOGRÁFICA");
     }
   }, []);
+
+  // GATILLO DE EXPORTACIÓN
+  const generarPDF = useReactToPrint({
+    contentRef: componentePDF, // <- Usamos 'contentRef' en lugar de 'content: () =>'
+    documentTitle: 'Reporte_Civil_Analytics_V5',
+  });
 
   useEffect(() => {
     cargarRadarCloud();
@@ -275,7 +286,7 @@ export default function MapaSatelital() {
   const posicionesPoligono = puntos.map(p => [parseFloat(p.lat), parseFloat(p.lng)]);
 
   return (
-    <div className="w-full h-full flex flex-col md:grid md:grid-cols-[22rem_1fr] md:grid-rows-[auto_1fr] border-2 border-[#00FF00] bg-black shadow-[0_0_20px_rgba(0,255,0,0.1)] overflow-y-auto md:overflow-hidden custom-scrollbar">
+    <div ref={componentePDF} className="w-full h-full flex flex-col md:grid md:grid-cols-[22rem_1fr] md:grid-rows-[auto_1fr] border-2 border-[#00FF00] bg-black shadow-[0_0_20px_rgba(0,255,0,0.1)] overflow-y-auto md:overflow-hidden custom-scrollbar">
       
       {/* 🧭 BLOQUE 1: CONSOLA DE CONTROL */}
       <div className="order-1 md:col-start-1 md:row-start-1 bg-[#000800] border-b border-[#004400] md:border-r-2 p-4 font-mono text-xs z-[450] shrink-0">
@@ -284,11 +295,26 @@ export default function MapaSatelital() {
             <h3 className="text-[#00FF00] font-black uppercase tracking-wider">CIVIL ANALYTICS V5</h3>
             <p className="text-[9px] text-[#008800]">RADAR GEOMÉTRICO + AMBIENTAL</p>
           </div>
-          {puntos.length > 0 && (
-            <button onClick={limpiarTodoElRadar} className="text-[9px] bg-red-950 text-red-400 border border-red-700 px-1 hover:bg-red-600 hover:text-white transition-colors font-bold">
-              [ PURGAR NUBE ]
-            </button>
-          )}
+          
+          {/* 📡 BOTONES TÁCTICOS DE DESPLIEGUE */}
+          <div className="flex gap-2">
+            {puntos.length >= 3 && (
+              <button 
+                onClick={generarPDF} 
+                className="text-[9px] bg-[#002200] text-[#00FF00] border border-[#00FF00] px-2 hover:bg-[#00FF00] hover:text-black transition-colors font-bold uppercase tracking-wider"
+              >
+                [ 📄 INFORME A4 ]
+              </button>
+            )}
+            {puntos.length > 0 && (
+              <button 
+                onClick={limpiarTodoElRadar} 
+                className="text-[9px] bg-red-950 text-red-400 border border-red-700 px-1 hover:bg-red-600 hover:text-white transition-colors font-bold uppercase"
+              >
+                [ PURGAR NUBE ]
+              </button>
+            )}
+          </div>
         </div>
 
         <form onSubmit={ejecutarBusqueda} className="mb-1">
