@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -33,14 +33,13 @@ export default function MapaSatelital() {
   const [estadoRadar, setEstadoRadar] = useState('STANDBY');
   const [objetivoVuelo, setObjetivoVuelo] = useState(null);
 
+  // Estados analíticos para el lote
+  const [calculosLote, setCalculosLote] = useState({ area: 0, perimetro: 0, tramos: [] });
+
   const baseLat = -34.6037;
   const baseLng = -58.3816;
 
-  // ========================================================
-  // 🛰️ ENLACE SATELITAL A MONGODB (OPERACIONES CRUD)
-  // ========================================================
-
-  // 1. EXTRAER COORDENADAS DE LA NUBE
+  // 🛰️ 1. EXTRAER COORDENADAS DE LA NUBE
   const cargarRadarCloud = useCallback(async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/puntos`);
@@ -55,7 +54,84 @@ export default function MapaSatelital() {
     cargarRadarCloud();
   }, [cargarRadarCloud]);
 
-  // GENERADOR CROMÁTICO
+  // ========================================================
+  // 🧮 MOTORES MATEMÁTICOS DE INGENIERÍA CIVIL
+  // ========================================================
+
+  // Algoritmo A: Fórmula de Haversine (Distancia esférica entre dos puntos)
+  const calcularDistanciaHaversine = (lat1, lon1, lat2, lon2) => {
+    const R = 6371000; // Radio de la Tierra en metros
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Devuelve metros
+  };
+
+  // Algoritmo B: Fórmula de Shoelace (Área de polígono proyectada)
+  const calcularAreaShoelace = (coordenadas) => {
+    if (coordenadas.length < 3) return 0;
+    
+    // Proyección simplificada para distancias cortas (conversión de grados a metros aproximada)
+    const factorLat = 111320; 
+    const factorLng = 40075000 * Math.cos((coordenadas[0].lat * Math.PI) / 180) / 360;
+
+    let area = 0;
+    const j = coordenadas.length - 1;
+
+    for (let i = 0; i < coordenadas.length; i++) {
+      const p1 = coordenadas[i];
+      const p2 = coordenadas[(i + 1) % coordenadas.length];
+      
+      const x1 = p1.lng * factorLng;
+      const y1 = p1.lat * factorLat;
+      const x2 = p2.lng * factorLng;
+      const y2 = p2.lat * factorLat;
+
+      area += (x1 + x2) * (y1 - y2);
+    }
+
+    return Math.abs(area / 2); // Devuelve metros cuadrados
+  };
+
+  // Ejecutor de Telemetría Métrica
+  useEffect(() => {
+    if (puntos.length >= 3) {
+      let perimetroAcumulado = 0;
+      const listaTramos = [];
+
+      for (let i = 0; i < puntos.length; i++) {
+        const actual = puntos[i];
+        const siguiente = puntos[(i + 1) % puntos.length];
+        
+        const d = calcularDistanciaHaversine(
+          parseFloat(actual.lat), parseFloat(actual.lng),
+          parseFloat(siguiente.lat), parseFloat(siguiente.lng)
+        );
+        
+        perimetroAcumulado += d;
+        listaTramos.push({
+          de: actual.etiqueta,
+          a: siguiente.etiqueta,
+          distancia: d.toFixed(2)
+        });
+      }
+
+      const areaCalculada = calcularAreaShoelace(puntos.map(p => ({ lat: parseFloat(p.lat), lng: parseFloat(p.lng) })));
+
+      setCalculosLote({
+        area: areaCalculada.toFixed(2),
+        perimetro: perimetroAcumulado.toFixed(2),
+        tramos: listaTramos
+      });
+    } else {
+      setCalculosLote({ area: 0, perimetro: 0, tramos: [] });
+    }
+  }, [puntos]);
+
+  // GENERADOR CROMÁTICO ANTICOLISIÓN
   const generarColorUnico = () => {
     const coloresExistentes = puntos.map(p => p.hue);
     let intentoHue;
@@ -78,7 +154,7 @@ export default function MapaSatelital() {
       lng,
       hue,
       colorCss: `hsl(${hue}, 100%, 50%)`,
-      etiqueta: `PUNTO_${(puntos.length + 1).toString().padStart(2, '0')}`
+      etiqueta: `PT_${(puntos.length + 1).toString().padStart(2, '0')}`
     };
 
     try {
@@ -87,14 +163,14 @@ export default function MapaSatelital() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevoPunto)
       });
-      cargarRadarCloud(); // Refresca el mapa con el ID real de Mongo
+      cargarRadarCloud();
       setEstadoRadar('STANDBY');
     } catch (error) {
       setEstadoRadar('ERROR DE ESCRITURA');
     }
   };
 
-  // 3. PURGAR UNA BALIZA ESPECÍFICA (DELETE)
+  // 3. PURGAR COORDENADA (DELETE)
   const eliminarPunto = async (id) => {
     setEstadoRadar('PURGANDO...');
     try {
@@ -106,12 +182,10 @@ export default function MapaSatelital() {
     }
   };
 
-  // 4. MODIFICACIÓN EN VIVO DE LA MATRIZ (Estado Local)
   const modificarEtiquetaLocal = (id, nuevoTexto) => {
     setPuntos(puntos.map(p => p._id === id ? { ...p, etiqueta: nuevoTexto.toUpperCase() } : p));
   };
 
-  // 4.1 IMPACTAR MODIFICACIÓN EN LA NUBE (PUT al salir del cuadro de texto)
   const guardarEtiquetaNube = async (id, textoFinal) => {
     setEstadoRadar('ACTUALIZANDO...');
     try {
@@ -126,7 +200,6 @@ export default function MapaSatelital() {
     }
   };
 
-  // 5. PURGA TOTAL (DELETE ALL)
   const limpiarTodoElRadar = async () => {
     if (window.confirm("¿Desea DESTRUIR todas las coordenadas de la base de datos?")) {
       setEstadoRadar('DESTRUYENDO MATRIZ...');
@@ -140,16 +213,13 @@ export default function MapaSatelital() {
     }
   };
 
-  // 🔍 MOTOR DE BÚSQUEDA OSM
   const ejecutarBusqueda = async (e) => {
     e.preventDefault();
     if (!terminoBusqueda) return;
-    
     setEstadoRadar('ESCANEANDO...');
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(terminoBusqueda)}`);
       const data = await res.json();
-      
       if (data && data.length > 0) {
         const { lat, lon } = data[0];
         setObjetivoVuelo({ lat: parseFloat(lat), lng: parseFloat(lon) });
@@ -165,16 +235,18 @@ export default function MapaSatelital() {
     }
   };
 
+  // Convertir puntos a formato Leaflet para el polígono visual
+  const posicionesPoligono = puntos.map(p => [parseFloat(p.lat), parseFloat(p.lng)]);
+
   return (
-    // 🎛️ MATRIZ GRID RESPONSIVA (MANTENIDA INTACTA)
-    <div className="w-full h-full grid grid-cols-1 md:grid-cols-[20rem_1fr] grid-rows-[auto_45vh_1fr] md:grid-rows-[auto_1fr] border-2 border-[#00FF00] bg-black shadow-[0_0_20px_rgba(0,255,0,0.1)] gap-0 overflow-hidden">
+    <div className="w-full h-full grid grid-cols-1 md:grid-cols-[22rem_1fr] grid-rows-[auto_45vh_1fr] md:grid-rows-[auto_1fr] border-2 border-[#00FF00] bg-black shadow-[0_0_20px_rgba(0,255,0,0.1)] gap-0 overflow-hidden">
       
-      {/* 🧭 BLOQUE 1: CONSOLA DE BÚSQUEDA Y CONTROL */}
+      {/* 🧭 BLOQUE 1: CONSOLA DE CONTROL */}
       <div className="col-start-1 row-start-1 bg-[#000800] border-b border-[#004400] md:border-r-2 p-4 font-mono text-xs z-[450]">
-        <div className="border-b border-[#00FF00] pb-2 mb-3 flex justify-between items-center shrink-0">
+        <div className="border-b border-[#00FF00] pb-2 mb-3 flex justify-between items-center">
           <div>
-            <h3 className="text-[#00FF00] font-black uppercase tracking-wider">Telemetría V3</h3>
-            <p className="text-[9px] text-[#008800]">ING. DANIEL GARCÍA REGISTRY</p>
+            <h3 className="text-[#00FF00] font-black uppercase tracking-wider">CIVIL ANALYTICS V5</h3>
+            <p className="text-[9px] text-[#008800]">RADAR GEOMÉTRICO AUTÓNOMO</p>
           </div>
           {puntos.length > 0 && (
             <button onClick={limpiarTodoElRadar} className="text-[9px] bg-red-950 text-red-400 border border-red-700 px-1 hover:bg-red-600 hover:text-white transition-colors font-bold">
@@ -183,9 +255,9 @@ export default function MapaSatelital() {
           )}
         </div>
 
-        <form onSubmit={ejecutarBusqueda} className="mb-1 shrink-0">
+        <form onSubmit={ejecutarBusqueda} className="mb-1">
           <label className="text-[9px] text-[#00AA00] mb-1 block uppercase tracking-widest flex justify-between">
-            <span>Rastreo Global (OSM)</span>
+            <span>Rastreo de Lote (OSM)</span>
             <span className={`${estadoRadar !== 'STANDBY' ? 'animate-pulse text-white' : ''}`}>[{estadoRadar}]</span>
           </label>
           <div className="flex gap-1">
@@ -194,7 +266,7 @@ export default function MapaSatelital() {
               value={terminoBusqueda}
               onChange={(e) => setTerminoBusqueda(e.target.value)}
               placeholder="Ej: Córdoba, Argentina..." 
-              className="w-full bg-[#001100] border border-[#004400] text-[#00FF00] p-1.5 focus:border-[#00FF00] focus:outline-none placeholder-[#003300] text-[10px]"
+              className="w-full bg-[#001100] border border-[#004400] text-[#00FF00] p-1.5 focus:border-[#00FF00] focus:outline-none placeholder Clyde text-[10px]"
             />
             <button type="submit" className="bg-[#003300] border border-[#00FF00] text-[#00FF00] px-3 font-bold hover:bg-[#00FF00] hover:text-black transition-colors">
               &gt;
@@ -203,9 +275,26 @@ export default function MapaSatelital() {
         </form>
       </div>
 
-      {/* 📊 BLOQUE 2: REGISTRO DE COORDENADAS (NUBE) */}
+      {/* 📊 BLOQUE 2: REGISTRO Y CALCULADORA SATELLITAL (HUD IZQUIERDO) */}
       <div className="col-start-1 row-start-3 md:row-start-2 md:col-start-1 bg-[#000800] border-t border-[#004400] md:border-t-0 md:border-r-2 p-4 flex flex-col min-h-0 overflow-hidden font-mono text-xs z-[450]">
-        <p className="text-[9px] text-[#008800] uppercase font-bold mb-2 tracking-widest block md:hidden">&gt; Puntos en Base de Datos</p>
+        
+        {/* TELEMETRÍA DEL POLÍGONO (SHOPLACE + HAVERSINE COBRANDO VIDA) */}
+        {puntos.length >= 3 && (
+          <div className="border border-[#00FF00] bg-[#000e00] p-3 mb-4 shadow-[0_0_10px_rgba(0,255,0,0.1)] shrink-0 space-y-1">
+            <p className="text-white font-bold text-[10px] uppercase border-b border-[#004400] pb-1 text-center mb-2">⚡ TELEMETRÍA DE INGENIERÍA</p>
+            <p className="text-[#00FF00] font-bold">ÁREA LOTE: <span className="text-white text-sm font-black">{calculosLote.area}</span> m²</p>
+            <p className="text-[#00FF00] font-bold">PERÍMETRO: <span className="text-white text-sm font-black">{calculosLote.perimetro}</span> m</p>
+            
+            <div className="pt-2 border-t border-[#003300] max-h-24 overflow-y-auto custom-scrollbar text-[9px] text-[#00AA00] space-y-1">
+              <p className="font-bold underline">LONGITUD DE LADOS:</p>
+              {calculosLote.tramos.map((t, idx) => (
+                <p key={idx}>🔹 Tramo {t.de} ➔ {t.a}: <span className="text-white font-bold">{t.distancia} m</span></p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p className="text-[9px] text-[#008800] uppercase font-bold mb-2 tracking-widest">&gt; Vértices del Terreno ({puntos.length})</p>
         <div className="flex-grow overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           {puntos.map((punto) => (
             <div key={punto._id} className="border border-[#003300] bg-black p-2 flex flex-col gap-1 hover:border-[#00FF00] transition-colors">
@@ -214,7 +303,7 @@ export default function MapaSatelital() {
                   type="text" 
                   value={punto.etiqueta} 
                   onChange={(e) => modificarEtiquetaLocal(punto._id, e.target.value)}
-                  onBlur={(e) => guardarEtiquetaNube(punto._id, e.target.value)} // <--- AQUÍ SE GUARDA AL TERMINAR DE ESCRIBIR
+                  onBlur={(e) => guardarEtiquetaNube(punto._id, e.target.value)}
                   className="bg-transparent border-b border-dashed border-[#004400] text-white font-bold focus:border-[#00FF00] focus:outline-none w-28 uppercase text-[10px]"
                 />
                 <div className="flex items-center gap-2">
@@ -222,35 +311,22 @@ export default function MapaSatelital() {
                   <button onClick={() => eliminarPunto(punto._id)} className="text-red-500 hover:text-white font-bold text-[10px] px-1">[X]</button>
                 </div>
               </div>
-              <div className="text-[9px] text-[#00CC00] space-y-0.5 opacity-80">
-                <p>LAT: {punto.lat}</p>
-                <p>LNG: {punto.lng}</p>
+              <div className="text-[9px] text-[#00CC00] opacity-80">
+                <p>LAT: {punto.lat} | LNG: {punto.lng}</p>
               </div>
             </div>
           ))}
           {puntos.length === 0 && (
             <div className="h-full flex items-center justify-center text-[#004400] text-center italic uppercase text-[10px] py-6">
-              &gt; LA NUBE ESTÁ VACÍA
+              &gt; CLAVE PUNTOS EN EL MAPA PARA GEOPROCESAR LOTE
             </div>
           )}
         </div>
       </div>
 
-      {/* 🗺️ BLOQUE 3: LIENZO CARTOGRÁFICO */}
-      <div className="col-start-1 row-start-2 md:row-start-1 md:row-span-2 md:col-start-2 h-full w-full relative z-0 border-t border-b border-[#004400] md:border-t-0 md:border-b-0">
-        <div className="absolute top-4 right-4 z-[400] bg-[#000a00]/90 border border-[#00FF00] p-3 backdrop-blur-sm shadow-[0_0_10px_rgba(0,255,0,0.2)] pointer-events-none">
-          <h3 className="text-[#00FF00] text-[10px] uppercase font-bold tracking-widest border-b border-[#004400] mb-2 pb-1">Marcador Nube</h3>
-          {puntos.length > 0 ? (
-            <div className="text-white text-[10px] font-mono space-y-1">
-              <p><span className="text-[#008800]">DB_REGS:</span> {puntos.length.toString().padStart(2, '0')}</p>
-              <p><span className="text-[#008800]">ÚLT_L:</span> {puntos[puntos.length - 1].lat}</p>
-              <p><span className="text-[#008800]">ÚLT_G:</span> {puntos[puntos.length - 1].lng}</p>
-            </div>
-          ) : (
-            <p className="text-[#00AA00] text-[9px] uppercase">ESPERANDO UPLINK</p>
-          )}
-        </div>
-
+      {/* 🗺️ BLOQUE 3: LIENZO CARTOGRÁFICO CON POLÍGONO DINÁMICO */}
+      <div className="col-start-1 row-start-2 md:row-start-1 md:row-span-2 md:col-start-2 h-full w-full relative z-0">
+        
         <MapContainer 
           center={[baseLat, baseLng]} 
           zoom={12} 
@@ -258,12 +334,26 @@ export default function MapaSatelital() {
           zoomControl={false}
         >
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CartoDB</a> | OSM'
+            attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
           
           <EscanerCoordenadas onPuntoCapturado={capturarPunto} />
           <ControladorVuelo objetivo={objetivoVuelo} />
+
+          {/* DIBUJO AUTOMÁTICO DEL POLÍGONO EN VERDE RADAR */}
+          {posicionesPoligono.length >= 3 && (
+            <Polygon 
+              positions={posicionesPoligono} 
+              pathOptions={{
+                color: '#00FF00', 
+                fillColor: '#00FF00', 
+                fillOpacity: 0.15,
+                dashArray: '5, 5',
+                weight: 2
+              }} 
+            />
+          )}
           
           {puntos.map((punto) => {
             const iconDinamico = L.divIcon({
