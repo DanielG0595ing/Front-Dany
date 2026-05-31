@@ -290,11 +290,33 @@ export default function CentroDeComando() {
           </section>
         </div>
 
-        {/* 📡 PIE DE PÁGINA CLANDESTINO */}
-        <footer className="fixed bottom-0 left-0 w-full bg-black border-t border-[#002200] p-2 md:px-8 text-[8px] md:text-[10px] flex flex-col md:flex-row justify-between items-center md:items-start opacity-90 italic z-50 text-center gap-1 md:gap-0">
-          <p className="text-[#00FF00]">TERMINAL LOGÍSTICA V3.0 - LICENCIA VIP: ING. CIVIL DANIEL GARCÍA</p>
-          <p className="text-[#005500]">DESARROLLADO EN LAS SOMBRAS POR @MANUEXPLORA & BASE IA</p>
+        {/* ========================================== */}
+        {/* 📡 PIE DE PÁGINA CLANDESTINO (PROTOCOLO OMEGA INYECTADO) */}
+        {/* ========================================== */}
+        <footer className="fixed bottom-0 left-0 w-full bg-[#000400] border-t border-[#004400] p-2 md:px-6 text-[8px] md:text-[10px] flex flex-col md:flex-row justify-between items-center z-50 text-center gap-2 md:gap-0 shadow-[0_-5px_20px_rgba(0,255,0,0.1)] backdrop-blur-md font-mono">
+          
+          {/* LADO IZQUIERDO: LICENCIA Y DOCUMENTOS OMEGA */}
+          <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6">
+            <p className="text-[#00FF00] font-bold tracking-widest uppercase opacity-80">
+              &gt; TERMINAL V3.0 // LICENCIA VIP: ING. CIVIL DANIEL GARCÍA
+            </p>
+            <div className="flex gap-3 text-[#00AA00] font-black">
+              {/* Rutas configuradas hacia la carpeta /public/docs/ de Next.js */}
+              <a href="/docs/MALETIN_NUCLEAR.md" target="_blank" rel="noopener noreferrer" className="hover:text-white hover:underline decoration-[#00FF00] transition-colors border border-transparent hover:border-[#00FF00] px-1">
+                [ ☢️ MALETÍN NUCLEAR ]
+              </a>
+              <a href="/accs/MANUAL-DE-OPERACION.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-white hover:underline decoration-[#00FF00] transition-colors border border-transparent hover:border-[#00FF00] px-1">
+                [ 📖 MANUAL DE CAMPO ]
+              </a>
+            </div>
+          </div>
+
+          {/* LADO DERECHO: FIRMA BIOGRÁFICA */}
+          <div className="text-[#008800] italic tracking-wider mt-1 md:mt-0">
+            DESARROLLADO EN LAS SOMBRAS POR <a href="https://cyberenterados.github.io/ManuExplora-Dossier_identidad/" target="_blank" rel="noopener noreferrer" className="text-[#00FF00] font-black not-italic hover:bg-[#00FF00] hover:text-black px-1 transition-all drop-shadow-[0_0_5px_#00FF00]">@MANUEXPLORA</a> & BASE IA
+          </div>
         </footer>
+        
       </main>
     </AccesoRestringido>
   );
