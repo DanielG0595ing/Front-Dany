@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import TerminalInyeccion from '../components/TerminalInyeccion';
 import AccesoRestringido from '../components/AccesoRestringido';
 import Link from 'next/link';
-import VisorCRT from '../components/VisorCRT'; // ➔ INYECTE ESTA LÍNEA AQUÍ
+import VisorCRT from '../components/VisorCRT';
 
 export default function CentroDeComando() {
   const [misiones, setMisiones] = useState([]);
@@ -11,6 +11,12 @@ export default function CentroDeComando() {
   const [loading, setLoading] = useState(true);
   const [mostrarTerminal, setMostrarTerminal] = useState(false);
   const [ipOrigen, setIpOrigen] = useState('INICIALIZANDO ESCÁNER...');
+
+  // ==========================================
+  // ➔ 1. ESTADOS DE BÚSQUEDA TÁCTICA (FILTROS)
+  // ==========================================
+  const [filtroFecha, setFiltroFecha] = useState('');
+  const [filtroObra, setFiltroObra] = useState('');
 
   const sincronizarRadar = useCallback(async () => {
     setLoading(true);
@@ -35,14 +41,27 @@ export default function CentroDeComando() {
     setIpOrigen('BUENOS_AIRES_BASE');
   }, [sincronizarRadar]);
 
+  // ==========================================
+  // ➔ 2. MÁSCARA MATRICIAL DE FILTRADO REACTIVO
+  // ==========================================
+  const misionesFiltradas = misiones.filter(mision => {
+    // Escaneo de Fecha (Ajustado a la variable real 'fecha_nueva')
+    const cumpleFecha = filtroFecha ? mision.fecha_nueva?.includes(filtroFecha) : true;
+    
+    // Escaneo de Obra (Busca tanto en 'codigo_obra' como en 'nombre_proyecto')
+    const cumpleObra = filtroObra ? 
+      (mision.codigo_obra?.toLowerCase().includes(filtroObra.toLowerCase()) || 
+       mision.nombre_proyecto?.toLowerCase().includes(filtroObra.toLowerCase())) : true;
+       
+    return cumpleFecha && cumpleObra;
+  });
+
   return (
     // 🛡️ ESCUDOS PERIMETRALES ACTIVADOS
     <AccesoRestringido>
-      {/* 📱 ADAPTACIÓN: Padding reducido en móviles (p-4), expandido en desktop (md:p-8) */}
       <main className="min-h-screen bg-black text-[#00FF00] font-mono p-4 md:p-8 selection:bg-[#005500] selection:text-white pb-24 md:pb-20">
         
         {/* 🛡️ ENCABEZADO TÁCTICO */}
-        {/* 📱 ADAPTACIÓN: Columna en móvil, fila en desktop. Textos adaptables. */}
         <header className="border-b-2 border-[#00FF00] pb-6 mb-8 md:mb-10 flex flex-col md:flex-row justify-between items-start md:items-center shadow-[0_0_20px_rgba(0,255,0,0.15)] gap-4 md:gap-0">
           <div className="w-full md:w-auto">
             <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase italic break-words">
@@ -85,33 +104,19 @@ export default function CentroDeComando() {
               <p>&gt; IP_ORIGEN: {ipOrigen}</p>
               <p>&gt; ENCRYPT: AES-256-GCM</p>
             </div>
-              {/* ========================================== */}
-              {/* 🔗 PUENTES DE NAVEGACIÓN TÁCTICA */}
-              {/* ========================================== */}
+            
               <nav className="mt-8 flex flex-col gap-3 z-[450]">
                 <p className="text-[10px] text-[#008800] tracking-widest uppercase border-b border-[#004400] pb-1 mb-2 font-bold">
                   &gt; RUTAS DE ACCESO RESTRINGIDO
                 </p>
-                
-                <Link 
-                  href="/visor" 
-                  className="bg-[#001100] border border-[#00FF00] text-[#00FF00] p-2 hover:bg-[#00FF00] hover:text-black font-black text-xs uppercase text-center transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_15px_rgba(0,255,0,0.4)] tracking-wider"
-                >
+                <Link href="/visor" className="bg-[#001100] border border-[#00FF00] text-[#00FF00] p-2 hover:bg-[#00FF00] hover:text-black font-black text-xs uppercase text-center transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_15px_rgba(0,255,0,0.4)] tracking-wider">
                   [ 🗺️ RADAR (VISOR) ]
                 </Link>
-                
-                <Link 
-                  href="/gestion" 
-                  className="bg-[#001100] border border-[#00FF00] text-[#00FF00] p-2 hover:bg-[#00FF00] hover:text-black font-black text-xs uppercase text-center transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_15px_rgba(0,255,0,0.4)] tracking-wider"
-                >
+                <Link href="/gestion" className="bg-[#001100] border border-[#00FF00] text-[#00FF00] p-2 hover:bg-[#00FF00] hover:text-black font-black text-xs uppercase text-center transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_15px_rgba(0,255,0,0.4)] tracking-wider">
                   [ 📊 BÓVEDA (GESTIÓN) ]
                 </Link>
               </nav>
 
-              {/* ========================================== */}
-              {/* 📺 MÓDULO CRT: VISOR DE TELEMETRÍA (FRENTE VISUAL) */}
-              {/* ========================================== */}
-              {/* hidden md:block asegura que el televisor no estorbe en los celulares del terreno,solo se encenderá en los monitores anchos de la Base Operativa */}
               <div className="mt-10 relative z-[450]">
                 <VisorCRT />
               </div>
@@ -119,8 +124,9 @@ export default function CentroDeComando() {
 
           {/* COLUMNA CENTRAL/DERECHA: GRILLA Y TERMINAL */}
           <section className="lg:col-span-3">
-            {/* 📱 ADAPTACIÓN: Botón ocupa todo el ancho en móvil */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
+            
+            {/* CABECERA DE SECCIÓN Y BOTÓN DE INYECCIÓN */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-4 sm:gap-0">
               <h2 className="text-xl md:text-2xl font-bold uppercase tracking-widest">&gt; Despliegue Operativo</h2>
               
               <button 
@@ -130,6 +136,48 @@ export default function CentroDeComando() {
                 }`}>
                 {mostrarTerminal ? '[ - ] ABORTAR INYECCIÓN' : '[ + ] INYECTAR NUEVA OBRA'}
               </button>
+            </div>
+
+            {/* ========================================== */}
+            {/* ➔ 3. PANEL DE FILTRADO REACTIVO INYECTADO */}
+            {/* ========================================== */}
+            <div className="border border-[#004400] bg-[#000500] p-3 flex flex-col lg:flex-row items-center gap-4 mb-6 text-xs shadow-[0_0_15px_rgba(0,34,0,0.5)]">
+              
+              {/* Selector Cronológico (F_NUEVA) */}
+              <div className="w-full lg:flex-1 flex items-center gap-2">
+                <span className="text-[#00AA00] font-bold tracking-wider text-[10px]">F_NUEVA:</span>
+                <input 
+                  type="date" 
+                  value={filtroFecha}
+                  onChange={(e) => setFiltroFecha(e.target.value)}
+                  className="bg-black border border-[#00FF00] text-[#00FF00] p-1 uppercase focus:outline-none focus:ring-1 focus:ring-[#00FF00] font-mono w-full text-center dark:[color-scheme:dark] cursor-pointer"
+                />
+              </div>
+
+              {/* Identificador de Terreno (OBRA) */}
+              <div className="w-full lg:flex-1 flex items-center gap-2">
+                <span className="text-[#00AA00] font-bold tracking-wider text-[10px]">OBRA:</span>
+                <div className="relative w-full">
+                  <span className="absolute left-2 top-1.5 text-[#00AA00] text-[10px]">&gt;_</span>
+                  <input 
+                    type="text" 
+                    placeholder="BUSCAR CÓDIGO O PROYECTO..."
+                    value={filtroObra}
+                    onChange={(e) => setFiltroObra(e.target.value).toUpperCase()}
+                    className="bg-black border border-[#00FF00] text-[#00FF00] pl-6 pr-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#00FF00] font-mono uppercase w-full text-[11px]"
+                  />
+                </div>
+              </div>
+
+              {/* Dispositivo de Reinicio de Canales */}
+              {(filtroFecha || filtroObra) && (
+                <button 
+                  onClick={() => { setFiltroFecha(''); setFiltroObra(''); }}
+                  className="w-full lg:w-auto border-2 border-red-600 text-red-500 bg-[#110000] px-3 py-1 hover:bg-red-600 hover:text-white transition-colors text-[10px] uppercase font-black tracking-wider shadow-[0_0_10px_rgba(255,0,0,0.2)]"
+                >
+                  [ X LIMPIAR RADAR ]
+                </button>
+              )}
             </div>
 
             {/* 💥 MÓDULO DE INYECCIÓN */}
@@ -152,10 +200,17 @@ export default function CentroDeComando() {
                 <p className="text-sm md:text-xl opacity-40 mb-4">[ RADAR LIMPIO - NO SE DETECTAN OBRAS ACTIVAS ]</p>
                 <p className="text-[10px] md:text-xs opacity-30">USE EL BOTÓN SUPERIOR PARA COMENZAR</p>
               </div>
+            ) : misionesFiltradas.length === 0 ? (
+              /* ⚠️ ALERTA DE RADAR VACÍO POR FILTROS */
+              <div className="p-10 md:p-20 border-2 border-dashed border-amber-600 text-center bg-[#110500]">
+                <p className="text-sm md:text-xl text-amber-500 mb-4 animate-pulse">[ CERO COINCIDENCIAS EN EL RADAR ]</p>
+                <p className="text-[10px] md:text-xs text-amber-600">MODIFIQUE LOS PARÁMETROS DE BÚSQUEDA</p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
                 
-                {misiones.map((mision) => {
+                {/* Iterando sobre MISIONES FILTRADAS en lugar del array crudo */}
+                {misionesFiltradas.map((mision) => {
                   const primeraLineaComentario = mision.notas_telemetria 
                     ? mision.notas_telemetria.split('\n')[0] 
                     : 'SIN NOVEDADES EN EL FRENTE';
@@ -236,7 +291,6 @@ export default function CentroDeComando() {
         </div>
 
         {/* 📡 PIE DE PÁGINA CLANDESTINO */}
-        {/* 📱 ADAPTACIÓN: Textos apilados en móvil y más legibles */}
         <footer className="fixed bottom-0 left-0 w-full bg-black border-t border-[#002200] p-2 md:px-8 text-[8px] md:text-[10px] flex flex-col md:flex-row justify-between items-center md:items-start opacity-90 italic z-50 text-center gap-1 md:gap-0">
           <p className="text-[#00FF00]">TERMINAL LOGÍSTICA V3.0 - LICENCIA VIP: ING. CIVIL DANIEL GARCÍA</p>
           <p className="text-[#005500]">DESARROLLADO EN LAS SOMBRAS POR @MANUEXPLORA & BASE IA</p>
