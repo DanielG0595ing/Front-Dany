@@ -204,17 +204,33 @@ export default function CuartoOscuro() {
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    
+                    {/* ========================================== */}
+                    {/* ➔ CALENDARIOS TÁCTICOS INYECTADOS (EDICIÓN) */}
+                    {/* ========================================== */}
                     <div className="flex flex-col">
-                      <label className="text-[10px] opacity-70 mb-1">FC (COMPROMISO)</label>
-                      <input type="text" name="fecha_compromiso" defaultValue={datosEdicion.fecha_compromiso} className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none uppercase text-xs w-full" />
+                      <label className="text-[10px] text-[#00AA00] font-bold tracking-wider mb-1">&gt; FC (COMPROMISO):</label>
+                      <input 
+                        type="date" 
+                        name="fecha_compromiso" 
+                        defaultValue={datosEdicion.fecha_compromiso} 
+                        className="bg-black border border-[#00FF00] text-[#00FF00] p-2 uppercase focus:outline-none focus:ring-1 focus:ring-[#00FF00] font-mono dark:[color-scheme:dark] cursor-pointer text-xs w-full" 
+                      />
                     </div>
                     <div className="flex flex-col">
-                      <label className="text-[10px] opacity-70 mb-1">FECHA NUEVA</label>
-                      <input type="text" name="fecha_nueva" defaultValue={datosEdicion.fecha_nueva} className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none uppercase text-xs w-full" />
+                      <label className="text-[10px] text-[#00AA00] font-bold tracking-wider mb-1">&gt; F_NUEVA:</label>
+                      <input 
+                        type="date" 
+                        name="fecha_nueva" 
+                        defaultValue={datosEdicion.fecha_nueva} 
+                        className="bg-black border border-[#00FF00] text-[#00FF00] p-2 uppercase focus:outline-none focus:ring-1 focus:ring-[#00FF00] font-mono dark:[color-scheme:dark] cursor-pointer text-xs w-full" 
+                      />
                     </div>
+                    {/* ========================================== */}
+
                     <div className="flex flex-col">
                       <label className="text-[10px] opacity-70 mb-1">ESTADO</label>
-                      <select name="estado_operativo" defaultValue={datosEdicion.estado_operativo} className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none uppercase text-xs w-full">
+                      <select name="estado_operativo" defaultValue={datosEdicion.estado_operativo} className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none uppercase text-xs w-full cursor-pointer">
                         <option value="SIN ACCION">SIN ACCION</option>
                         <option value="EN PROCESO">EN PROCESO</option>
                         <option value="FINALIZADO">FINALIZADO</option>
@@ -222,7 +238,7 @@ export default function CuartoOscuro() {
                     </div>
                     <div className="flex flex-col">
                       <label className="text-[10px] opacity-70 mb-1">OCULTAR</label>
-                      <select name="ocultar" defaultValue={datosEdicion.ocultar} className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none uppercase text-xs w-full">
+                      <select name="ocultar" defaultValue={datosEdicion.ocultar} className="bg-black border border-[#004400] text-[#00FF00] p-2 focus:border-[#00FF00] focus:outline-none uppercase text-xs w-full cursor-pointer">
                         <option value="NO">NO</option>
                         <option value="SI">SI</option>
                       </select>

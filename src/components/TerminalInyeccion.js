@@ -61,17 +61,31 @@ export default function TerminalInyeccion({ onMisionInyectada }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          
+          {/* ========================================== */}
+          {/* ➔ CALENDARIOS TÁCTICOS INYECTADOS (FC y F_NUEVA) */}
+          {/* ========================================== */}
           <div className="flex flex-col">
-            <label className="text-[10px] md:text-xs opacity-70 mb-1">FC (FECHA COMPROMISO)</label>
-            <input type="text" name="fecha_compromiso" placeholder="Ej: 04/05" className="bg-black border border-[#004400] text-[#00FF00] p-2 md:p-3 focus:border-[#00FF00] focus:outline-none placeholder-[#002200] w-full" />
+            <label className="text-[10px] text-[#00AA00] font-bold tracking-wider mb-1">&gt; FC (COMPROMISO):</label>
+            <input 
+              type="date" 
+              name="fecha_compromiso" 
+              className="bg-black border border-[#00FF00] text-[#00FF00] p-2 md:p-3 uppercase focus:outline-none focus:ring-1 focus:ring-[#00FF00] font-mono dark:[color-scheme:dark] cursor-pointer w-full" 
+            />
           </div>
           <div className="flex flex-col">
-            <label className="text-[10px] md:text-xs opacity-70 mb-1">FECHA NUEVA</label>
-            <input type="text" name="fecha_nueva" placeholder="Ej: 4-may" className="bg-black border border-[#004400] text-[#00FF00] p-2 md:p-3 focus:border-[#00FF00] focus:outline-none placeholder-[#002200] w-full" />
+            <label className="text-[10px] text-[#00AA00] font-bold tracking-wider mb-1">&gt; F_NUEVA:</label>
+            <input 
+              type="date" 
+              name="fecha_nueva" 
+              className="bg-black border border-[#00FF00] text-[#00FF00] p-2 md:p-3 uppercase focus:outline-none focus:ring-1 focus:ring-[#00FF00] font-mono dark:[color-scheme:dark] cursor-pointer w-full" 
+            />
           </div>
+          {/* ========================================== */}
+
           <div className="flex flex-col">
             <label className="text-[10px] md:text-xs opacity-70 mb-1">ESTADO</label>
-            <select name="estado_operativo" className="bg-black border border-[#004400] text-[#00FF00] p-2 md:p-3 focus:border-[#00FF00] focus:outline-none w-full">
+            <select name="estado_operativo" className="bg-black border border-[#004400] text-[#00FF00] p-2 md:p-3 focus:border-[#00FF00] focus:outline-none w-full cursor-pointer">
               <option value="SIN ACCION">SIN ACCION</option>
               <option value="EN PROCESO">EN PROCESO</option>
               <option value="FINALIZADO">FINALIZADO</option>
@@ -79,7 +93,7 @@ export default function TerminalInyeccion({ onMisionInyectada }) {
           </div>
           <div className="flex flex-col">
             <label className="text-[10px] md:text-xs opacity-70 mb-1">OCULTAR</label>
-            <select name="ocultar" className="bg-black border border-[#004400] text-[#00FF00] p-2 md:p-3 focus:border-[#00FF00] focus:outline-none w-full">
+            <select name="ocultar" className="bg-black border border-[#004400] text-[#00FF00] p-2 md:p-3 focus:border-[#00FF00] focus:outline-none w-full cursor-pointer">
               <option value="NO">NO</option>
               <option value="SI">SI</option>
             </select>
@@ -103,4 +117,3 @@ export default function TerminalInyeccion({ onMisionInyectada }) {
     </div>
   );
 }
-

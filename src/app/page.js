@@ -42,16 +42,29 @@ export default function CentroDeComando() {
   }, [sincronizarRadar]);
 
   // ==========================================
-  // ➔ 2. MÁSCARA MATRICIAL DE FILTRADO REACTIVO
+  // ➔ 2. MÁSCARA MATRICIAL DE FILTRADO REACTIVO (REFORZADA)
   // ==========================================
   const misionesFiltradas = misiones.filter(mision => {
-    // Escaneo de Fecha (Ajustado a la variable real 'fecha_nueva')
-    const cumpleFecha = filtroFecha ? mision.fecha_nueva?.includes(filtroFecha) : true;
-    
-    // Escaneo de Obra (Busca tanto en 'codigo_obra' como en 'nombre_proyecto')
+    // Escaneo de Obra (Intacto y letal)
     const cumpleObra = filtroObra ? 
       (mision.codigo_obra?.toLowerCase().includes(filtroObra.toLowerCase()) || 
        mision.nombre_proyecto?.toLowerCase().includes(filtroObra.toLowerCase())) : true;
+
+    // Escaneo Cronológico Multiprotocolo (F_NUEVA)
+    let cumpleFecha = true;
+    if (filtroFecha) {
+      // El calendario arroja "YYYY-MM-DD" (Ej: 2026-05-31)
+      const [year, month, day] = filtroFecha.split('-');
+      const formatoLatino1 = `${day}/${month}/${year}`; // 31/05/2026
+      const formatoLatino2 = `${day}-${month}-${year}`; // 31-05-2026
+      
+      const fechaMatriz = mision.fecha_nueva || '';
+      
+      // Cruza los datos: busca el formato nuevo O los formatos viejos heredados
+      cumpleFecha = fechaMatriz.includes(filtroFecha) || 
+                    fechaMatriz.includes(formatoLatino1) || 
+                    fechaMatriz.includes(formatoLatino2);
+    }
        
     return cumpleFecha && cumpleObra;
   });
