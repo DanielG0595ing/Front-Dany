@@ -18,21 +18,18 @@ export default function VisorCRT() {
   const canvasRef = useRef(null);
 
   // ==========================================
-  // 1. MOTOR DE EXTRACCIÓN Y RADAR SILENCIOSO (MONGO ATLAS + GPS)
+  // 1. MOTOR DE EXTRACCIÓN Y RADAR SILENCIOSO
   // ==========================================
   useEffect(() => {
     const extraerDatosConsola = async () => {
       try {
-        // Consultar Balizas
         const resPuntos = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/puntos`);
         const datosPuntos = await resPuntos.json();
         setPuntos(datosPuntos);
 
-        // Consultar Despliegue Operativo (Misiones)
         const resMisiones = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/misiones`);
         const datosMisiones = await resMisiones.json();
         
-        // Filtro de Seguridad: Descartar misiones 'oculto' o 'finalizado'
         const misionesActivas = datosMisiones.filter(m => m.estado !== 'oculto' && m.estado !== 'finalizado');
         setMisiones(misionesActivas);
         
@@ -40,31 +37,18 @@ export default function VisorCRT() {
           const randomIdx = Math.floor(Math.random() * misionesActivas.length);
           setMisionRandom(misionesActivas[randomIdx]);
         }
-
-        // Obtener GPS Local para Canales Base
-        if ("geolocation" in navigator) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => setCoordenadasBase({ lat: pos.coords.latitude, lng: pos.coords.longitude, origen: 'GPS EN LÍNEA' })
-          );
-        }
       } catch (err) {
         console.error(">_ ERROR EN ENRUTAMIENTO CRÍTICO MONGO", err);
       }
     };
 
-    // 💥 Disparo de extracción inmediato
     extraerDatosConsola();
-
-    // 🔄 RADAR SILENCIOSO: Conexión en tiempo real cada 10 segundos
-    const radarSilencioso = setInterval(() => {
-      extraerDatosConsola();
-    }, 10000);
-
+    const radarSilencioso = setInterval(extraerDatosConsola, 10000);
     return () => clearInterval(radarSilencioso);
-  }, [canalActual]);
+  }, []);
 
   // ==========================================
-  // 2. ENLACE CON APIs SATELITALES
+  // 2. ENLACE CON APIs SATELITALES (VÍA PROXY DE BACKEND)
   // ==========================================
   useEffect(() => {
     const latActiva = puntos.length > 0 ? puntos[0].lat : coordenadasBase.lat;
@@ -72,26 +56,27 @@ export default function VisorCRT() {
 
     const alimentarCanales = async () => {
       try {
-        // Clima
+        // A) Clima (Directo)
         const rc = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latActiva}&longitude=${lngActiva}&current_weather=true`);
         const dc = await rc.json();
         
-        // Sismos
+        // B) Sismos (Directo)
         const rs = await fetch(`https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=${latActiva}&longitude=${lngActiva}&maxradiuskm=300&limit=1`);
         const ds = await rs.json();
 
-        // Mercado
-        const rm = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
+        // C) 💰 PROXY FINANCIERO
+        const rm = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/proxy/crypto`);
         const dm = await rm.json();
 
-        // Suelo e Infraestructura (Solo si hay puntos cargados)
+        // D) Suelo e Infraestructura
         let dSuelo = null; let dInfra = null;
         if (puntos.length > 0) {
           const ri = await fetch(`https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lngActiva}&lat=${latActiva}&property=clay&depth=0-5cm`);
           dSuelo = await ri.json();
 
+          // E) 🗺️ PROXY LOGÍSTICO (¡Túnel Blindado!)
           const queryOSM = `[out:json];(way(around:1000,${latActiva},${lngActiva})["waterway"];);out 1;`;
-          const ro = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(queryOSM)}`);
+          const ro = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/proxy/osm?data=${encodeURIComponent(queryOSM)}`);
           dInfra = await ro.json();
         }
 
@@ -103,13 +88,14 @@ export default function VisorCRT() {
           infraestructura: dInfra?.elements?.length > 0 ? 'CUERPO DE AGUA DETECTADO' : 'PERÍMETRO DESPEJADO'
         });
       } catch (e) {
-        setTelemetriaSatelital(prev => ({ ...prev, suelo: '15.2%', infraestructura: 'PERÍMETRO SEGURO' }));
+        console.error(">_ ERROR EN TÚNEL DE TELEMETRÍA:", e);
       }
     };
 
     alimentarCanales();
   }, [puntos, coordenadasBase]);
-
+  // ... (El resto de la lógica de renderizado y canales se mantiene igual)
+  // NOTA: He omitido el resto para brevedad, solo sobrescriba hasta aquí o reemplace el archivo completo.
   // ==========================================
   // 🎛️ LOGIC MATRICIAL: CONSTRUCCIÓN DINÁMICA DE CANALES
   // ==========================================
